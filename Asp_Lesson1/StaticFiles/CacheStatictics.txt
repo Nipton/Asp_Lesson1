@@ -1,0 +1,4 @@
+currentEntryCount: 1,
+currentEstimatedSize: null,
+totalMisses: 1,
+totalHits: 3

@@ -1,4 +1,6 @@
-﻿using Asp_Lesson1.Models;
+﻿using Asp_Lesson1.Abstractions;
+using Asp_Lesson1.Models;
+using Asp_Lesson1.Models.DTO;
 using Asp_Lesson1.Repositories;
 using Microsoft.AspNetCore.Mvc;
 
@@ -6,25 +8,23 @@ namespace Asp_Lesson1.Controllers
 {
     public class ProductGroupController : ControllerBase
     {
+        IUnitOfWork unitOfWork;
+        public ProductGroupController(IUnitOfWork unitOfWork) 
+        {
+            this.unitOfWork = unitOfWork;
+        }
         [HttpPost("addGroup")]
         public ActionResult AddGroup(string name, string? description = null)
         {
             try
             {
-                using (ProductsContext productsContext = new ProductsContext())
-                {
-                    if (productsContext.ProductGroups.Any(x => x.Name.ToLower() == name.ToLower()))
-                    {
-                        return StatusCode(409);
-                    }
-                    else
-                    {
-                        ProductGroup productGroup = new ProductGroup() { Description = description, Name = name };
-                        productsContext.ProductGroups.Add(productGroup);
-                        productsContext.SaveChanges();
-                    }
-                }
+                ProductGroupModel model = new ProductGroupModel() { Description = description, Name = name};
+                unitOfWork.GroupProduct.Create(model);
                 return Ok();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return StatusCode(409);
             }
             catch
             {
@@ -36,11 +36,8 @@ namespace Asp_Lesson1.Controllers
         {
             try
             {
-                using (ProductsContext productsContext = new ProductsContext())
-                {
-                    var list = productsContext.ProductGroups.ToList();
-                    return list;
-                }
+                var groupList = unitOfWork.GroupProduct.GetAll();
+                return Ok(groupList);
             }
             catch
             {
@@ -52,20 +49,12 @@ namespace Asp_Lesson1.Controllers
         {
             try
             {
-                using (ProductsContext productsContext = new ProductsContext())
-                {
-                    ProductGroup? group = productsContext.ProductGroups.FirstOrDefault(x => x.Id == id);
-                    if (group != null)
-                    {
-                        productsContext.ProductGroups.Remove(group);
-                        productsContext.SaveChanges();
-                    }
-                    else
-                    {
-                        return StatusCode(409);
-                    }
-                }
+                unitOfWork.GroupProduct.Delete(id);
                 return Ok();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return StatusCode(409);
             }
             catch
             {
